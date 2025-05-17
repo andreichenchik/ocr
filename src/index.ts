@@ -8,10 +8,19 @@ const apiKey = process.env.MISTRAL_API_KEY;
 const client = new Mistral({apiKey: apiKey});
 
 // Function to save object to JSON file
-function saveToJson(data: any, filename: string): void {
+function saveToJson(data: any, filename: string, outputDir?: string): void {
   try {
     const jsonString = JSON.stringify(data, null, 2);
-    const filePath = path.join(process.cwd(), filename);
+    // Use the provided output directory or fall back to current working directory
+    const baseDir = outputDir ? outputDir : process.cwd();
+    const filePath = path.join(baseDir, filename);
+    
+    // Ensure the directory exists
+    const dirname = path.dirname(filePath);
+    if (!fs.existsSync(dirname)) {
+      fs.mkdirSync(dirname, { recursive: true });
+    }
+    
     fs.writeFileSync(filePath, jsonString);
     console.log(`Data successfully saved to ${filePath}`);
   } catch (error) {
@@ -78,32 +87,80 @@ function combineOcrResults(results: any[]): any {
   return combined;
 }
 
-async function main() {
+/**
+ * Process PDF files and extract text using OCR
+ * @param {string[]} pdfFiles - Array of PDF file paths to process
+ * @param {string} [outputDir] - Directory to save the output files (default: current directory)
+ * @param {string} [combinedOutputFile] - Filename for the combined results (default: combinedOcrResult.json)
+ * @param {boolean} [singleFileMode] - If true, only process the first PDF file (default: false)
+ */
+async function processOcr(
+  pdfFiles: string[], 
+  outputDir?: string, 
+  combinedOutputFile: string = 'combinedOcrResult.json',
+  singleFileMode: boolean = false
+): Promise<void> {
   try {
-    const pdfFiles = ['file1.pdf', 'file2.pdf', 'file3.pdf'];
+    if (pdfFiles.length === 0) {
+      console.error('No PDF files provided for processing');
+      return;
+    }
+    
+    // If in single file mode, only process the first file
+    const filesToProcess = singleFileMode ? [pdfFiles[0]] : pdfFiles;
     const ocrResults = [];
     
     // Process each PDF file
-    for (const file of pdfFiles) {
+    for (const file of filesToProcess) {
       console.log(`Processing ${file}...`);
       const result = await processPdfFile(file);
       ocrResults.push(result);
       
-      // Save individual result
-      saveToJson(result, `ocr_${file.replace('.pdf', '')}.json`);
+      // Save individual result with custom output directory
+      const outputFilename = `ocr_${path.basename(file).replace('.pdf', '')}.json`;
+      saveToJson(result, outputFilename, outputDir);
     }
     
-    // Combine results with adjusted page indices
-    const combinedResult = combineOcrResults(ocrResults);
+    // Skip combined result if only processing a single file
+    if (filesToProcess.length > 1) {
+      // Combine results with adjusted page indices
+      const combinedResult = combineOcrResults(ocrResults);
+      
+      // Save combined result with custom output directory and filename
+      saveToJson(combinedResult, combinedOutputFile, outputDir);
+    }
     
-    // Save combined result
-    saveToJson(combinedResult, 'combinedOcrResult.json');
-    console.log('All files processed and combined successfully!');
+    console.log('All files processed successfully!');
     
   } catch (error) {
-    console.error('Error in main process:', error);
+    console.error('Error in OCR process:', error);
   }
 }
 
-// Call the main function
-main();
+// Default function for command-line use
+async function main() {
+  // Example usage with default parameters
+  const pdfFiles = ['file1.pdf', 'file2.pdf', 'file3.pdf'];
+  
+  // Read command-line arguments if available
+  const args = process.argv.slice(2);
+  if (args.length > 0) {
+    const customPdfFiles = args;
+    const outputDir = process.env.OCR_OUTPUT_DIR; // Can be set as environment variable
+    const outputFile = process.env.OCR_COMBINED_OUTPUT || 'combinedOcrResult.json';
+    
+    await processOcr(customPdfFiles, outputDir, outputFile);
+  } else {
+    console.log('No command-line arguments detected. Using default PDF files list.');
+    // Use default PDF files (for development)
+    await processOcr(pdfFiles);
+  }
+}
+
+// Call the main function if executed directly (not imported as a module)
+if (require.main === module) {
+  main();
+} else {
+  // Export the function for use in other modules
+  module.exports = { processOcr };
+}

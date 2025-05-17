@@ -4,12 +4,18 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "ocr": "tsc && node dist/index.js"
+    "ocr": "tsc && node dist/index.js",
+    "ocr:file": "tsc && node dist/index.js",
+    "ocr:custom": "tsc && node dist/index.js"
   },
-  "keywords": [],
+  "keywords": [
+    "ocr",
+    "mistral",
+    "pdf"
+  ],
   "author": "",
   "license": "MIT",
-  "description": "",
+  "description": "OCR utility for processing PDF files using Mistral AI API",
   "devDependencies": {
     "@types/node": "^22.13.10",
     "typescript": "^5.8.2"
