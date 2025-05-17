@@ -1,0 +1,22 @@
+{
+  "name": "ocr",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "ocr": "tsc && node dist/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "@mistralai/mistralai": "^1.5.1",
+    "dotenv": "^16.4.7",
+    "glob": "^10.0.2"
+  }
+}
