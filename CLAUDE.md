@@ -12,24 +12,27 @@ This is an OCR (Optical Character Recognition) tool built with TypeScript that u
 
 ## Environment Setup
 
-The project requires a `.env` file in the root directory with the following variables:
+The project requires a `.env` file in the root directory with the following variable:
 ```
 MISTRAL_API_KEY=your_mistral_api_key_here
-OCR_OUTPUT_DIR=/path/to/output/directory (optional)
-OCR_COMBINED_OUTPUT=combined_results.json (optional)
 ```
 
 ## Commands
 
-### Build and Run with Default Settings
+### Command-Line Options
 ```
-npm run ocr
+npm run ocr -- [options] [file(s)]
 ```
-This command compiles the TypeScript code and runs the OCR process on the default PDF files.
+
+Options:
+- `-o, --output <file>`: Specify the output filename (default: "result.json")
+- `-h, --help`: Display help information
+
+Note: The `--` separator is required when using npm scripts to pass arguments to the script itself.
 
 ### Process Specific PDF Files
 ```
-npm run ocr file1.pdf file2.pdf
+npm run ocr -- file1.pdf file2.pdf
 ```
 or
 ```
@@ -37,10 +40,17 @@ node dist/index.js file1.pdf file2.pdf
 ```
 Process specific PDF files passed as command-line arguments.
 
-### Customizing Output
-Use the environment variables to customize output:
+### Using Wildcard Patterns
+You can use glob patterns to process multiple PDF files:
 ```
-OCR_OUTPUT_DIR=/custom/path OCR_COMBINED_OUTPUT=results.json npm run ocr file1.pdf file2.pdf
+npm run ocr -- "documents/*.pdf"
+npm run ocr -- reports/2023/*.pdf presentations/2023/*.pdf
+```
+
+### Specifying Output Filename
+```
+npm run ocr -- --output results.json file1.pdf
+npm run ocr -- -o report_results.json file1.pdf file2.pdf
 ```
 
 ### TypeScript Compilation
@@ -52,23 +62,25 @@ Compiles the TypeScript code to JavaScript in the `/dist` directory.
 ## Project Structure
 
 - `src/index.ts` - Main application file containing all the OCR processing logic
-- Files are output to the specified directory or current working directory:
+- Files are output to the current working directory:
   - Individual OCR results: `ocr_filename.json`
-  - Combined results: Customizable (default: `combinedOcrResult.json`)
+  - Combined results: Customizable (default: `result.json`)
 
 ## Important Notes
 
-1. PDF files can be specified as command-line arguments
+1. PDF files can be specified as command-line arguments or glob patterns (e.g., "*.pdf")
 2. The application uses the Mistral AI API for OCR processing
-3. Output directory and filenames are now customizable
-4. OCR results are saved as JSON files
+3. Output filename is customizable via command-line option (-o or --output)
+4. Default output filename is "result.json" if not specified
+5. All output files are saved in the current working directory
+6. OCR results are saved as JSON files
 
 ## Development Workflow
 
-1. Define PDF files to process via command-line arguments or use defaults
-2. Optionally set environment variables for output customization
-3. Run `npm run ocr` to process the files
-4. Check the generated JSON files in the specified output location
+1. Define PDF files to process via command-line arguments or glob patterns
+2. Optionally specify output filename with the `-o` or `--output` option
+3. Run `npm run ocr -- [options] [files]` to process the files
+4. Check the generated JSON files in the current directory
 
 ## API Usage
 
@@ -77,12 +89,12 @@ The project exposes a `processOcr` function with the following parameters:
 ```typescript
 processOcr(
   pdfFiles: string[], 
-  outputDir?: string, 
-  combinedOutputFile: string = 'combinedOcrResult.json',
+  outputDir: string = process.cwd(), 
+  combinedOutputFile: string = 'result.json',
   singleFileMode: boolean = false
 ): Promise<void>
 ```
 - `pdfFiles`: Array of PDF file paths to process
-- `outputDir`: Optional directory to save output files
-- `combinedOutputFile`: Filename for the combined results (default: combinedOcrResult.json)
+- `outputDir`: Directory to save output files (default: current working directory)
+- `combinedOutputFile`: Filename for the combined results (default: result.json)
 - `singleFileMode`: If true, only process the first PDF file (default: false)

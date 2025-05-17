@@ -2,6 +2,7 @@ import { Mistral } from '@mistralai/mistralai';
 import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
+import { glob } from 'glob';
 dotenv.config();
 
 const apiKey = process.env.MISTRAL_API_KEY;
@@ -90,14 +91,14 @@ function combineOcrResults(results: any[]): any {
 /**
  * Process PDF files and extract text using OCR
  * @param {string[]} pdfFiles - Array of PDF file paths to process
- * @param {string} [outputDir] - Directory to save the output files (default: current directory)
- * @param {string} [combinedOutputFile] - Filename for the combined results (default: combinedOcrResult.json)
+ * @param {string} [outputDir] - Directory to save the output files (default: current working directory)
+ * @param {string} [combinedOutputFile] - Filename for the combined results (default: result.json)
  * @param {boolean} [singleFileMode] - If true, only process the first PDF file (default: false)
  */
 async function processOcr(
   pdfFiles: string[], 
-  outputDir?: string, 
-  combinedOutputFile: string = 'combinedOcrResult.json',
+  outputDir: string = process.cwd(), 
+  combinedOutputFile: string = 'result.json',
   singleFileMode: boolean = false
 ): Promise<void> {
   try {
@@ -137,23 +138,124 @@ async function processOcr(
   }
 }
 
+// Expand glob patterns to match PDF files
+async function expandGlobPatterns(patterns: string[]): Promise<string[]> {
+  let expandedFiles: string[] = [];
+  
+  for (const pattern of patterns) {
+    // Check if it's a glob pattern or a direct file path
+    if (pattern.includes('*') || pattern.includes('?') || pattern.includes('[')) {
+      // It's a glob pattern, expand it
+      const matches = await glob(pattern, { nodir: true });
+      
+      // Filter for PDF files
+      const pdfMatches = matches.filter(file => file.toLowerCase().endsWith('.pdf'));
+      expandedFiles = [...expandedFiles, ...pdfMatches];
+    } else {
+      // It's a direct file path, check if it exists and is a PDF
+      if (fs.existsSync(pattern) && pattern.toLowerCase().endsWith('.pdf')) {
+        expandedFiles.push(pattern);
+      } else if (!pattern.toLowerCase().endsWith('.pdf')) {
+        console.warn(`Warning: ${pattern} is not a PDF file and will be skipped.`);
+      } else {
+        console.warn(`Warning: File ${pattern} not found.`);
+      }
+    }
+  }
+  
+  return expandedFiles;
+}
+
+// Display help information
+function showHelp(): void {
+  console.log(`
+OCR Tool Usage:
+--------------
+Process PDF files using Mistral AI OCR API.
+
+Arguments:
+  [files]                 PDF file(s) to process. Supports glob patterns like "*.pdf"
+  
+Options:
+  -o, --output <file>     Output file name for results (default: "result.json")
+  -h, --help              Show this help message
+
+Environment Variables:
+  MISTRAL_API_KEY         Required API key for Mistral AI
+
+Examples:
+  npm run ocr -- sample.pdf
+  npm run ocr -- --output results.json "docs/*.pdf"
+  npm run ocr -- -o custom.json file1.pdf file2.pdf
+  `);
+  process.exit(0);
+}
+
 // Default function for command-line use
 async function main() {
-  // Example usage with default parameters
-  const pdfFiles = ['file1.pdf', 'file2.pdf', 'file3.pdf'];
+  // Default output filename
+  const defaultOutputFilename = 'result.json';
   
-  // Read command-line arguments if available
+  // Parse command-line arguments
   const args = process.argv.slice(2);
-  if (args.length > 0) {
-    const customPdfFiles = args;
-    const outputDir = process.env.OCR_OUTPUT_DIR; // Can be set as environment variable
-    const outputFile = process.env.OCR_COMBINED_OUTPUT || 'combinedOcrResult.json';
+  let outputFilename = defaultOutputFilename;
+  let inputPatterns: string[] = [];
+  
+  // Check if help is requested
+  if (args.includes('--help') || args.includes('-h')) {
+    showHelp();
+    return;
+  }
+  
+  // Parse arguments
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
     
-    await processOcr(customPdfFiles, outputDir, outputFile);
+    if (arg === '--output' || arg === '-o') {
+      if (i + 1 < args.length && !args[i + 1].startsWith('-')) {
+        outputFilename = args[i + 1];
+        // Skip the next argument (the filename)
+        i++;
+      } else {
+        console.error('Error: --output option requires a filename argument');
+        process.exit(1);
+      }
+    } else if (arg.startsWith('-')) {
+      console.error(`Error: Unknown option: ${arg}`);
+      console.log('Use --help to see available options');
+      process.exit(1);
+    } else {
+      // It's an input file pattern
+      inputPatterns.push(arg);
+    }
+  }
+  
+  // Verify API key is set
+  if (!process.env.MISTRAL_API_KEY) {
+    console.error('Error: MISTRAL_API_KEY environment variable is not set');
+    console.log('Please set the API key in your .env file or environment variables');
+    process.exit(1);
+  }
+  
+  // Check if we have any input patterns
+  if (inputPatterns.length > 0) {
+    // Always use current directory for output
+    const outputDir = process.cwd();
+    
+    // Expand glob patterns to get actual file paths
+    const inputFiles = await expandGlobPatterns(inputPatterns);
+    
+    if (inputFiles.length === 0) {
+      console.log('No PDF files found matching the provided patterns.');
+      process.exit(1);
+    }
+    
+    console.log(`Found ${inputFiles.length} PDF file(s) to process.`);
+    await processOcr(inputFiles, outputDir, outputFilename);
   } else {
-    console.log('No command-line arguments detected. Using default PDF files list.');
-    // Use default PDF files (for development)
-    await processOcr(pdfFiles);
+    console.log('No input files specified. Please provide at least one PDF file or pattern.');
+    console.log('Use --help for usage information.');
+    process.exit(1);
   }
 }
 
