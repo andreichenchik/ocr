@@ -6,7 +6,7 @@ A TypeScript-based OCR (Optical Character Recognition) tool that processes PDF f
 
 - 📄 Process individual or multiple PDF files
 - 🤖 OCR processing using Mistral AI API
-- 📁 Support for glob patterns to process multiple files
+- 📁 Support for glob patterns to process multiple files with alphabetical sorting
 - 💾 Save individual and combined results as JSON
 - 🏗️ Clean architecture with dependency injection
 - ✅ Comprehensive test coverage
@@ -62,17 +62,19 @@ Process PDFs from multiple directories:
 npm run ocr -- "reports/2023/*.pdf" "presentations/2023/*.pdf"
 ```
 
-### Custom Output Filename
+**Note**: Files matched by wildcards are sorted alphabetically within each pattern group. When using multiple wildcard patterns, files are grouped by pattern in the order specified, then sorted within each group.
 
-Specify a custom output filename:
+### Custom Output Folder
+
+Specify a custom output folder:
 ```bash
-npm run ocr -- --output results.json file1.pdf
-npm run ocr -- -o report_results.json "docs/*.pdf"
+npm run ocr -- --output results/ file1.pdf
+npm run ocr -- -o output/ "docs/*.pdf"
 ```
 
 ### Command-Line Options
 
-- `-o, --output <file>`: Specify the output filename (default: "result.json")
+- `-o, --output <folder>`: Specify the output folder (default: current directory)
 - `-h, --help`: Display help information
 
 ## Output
@@ -80,9 +82,9 @@ npm run ocr -- -o report_results.json "docs/*.pdf"
 The tool generates two types of output files:
 
 1. **Individual OCR results**: Each processed PDF gets its own JSON file named `ocr_<original_filename>.json`
-2. **Combined results**: All OCR results are combined into a single file (default: `result.json` or custom name via `-o` option)
+2. **Combined results**: All OCR results are combined into a single file named `result.json`
 
-All output files are saved in the current working directory.
+All output files are saved in the specified output folder (default: current working directory).
 
 ## Architecture
 
@@ -93,7 +95,7 @@ The project follows SOLID principles and clean architecture:
 - **Configuration**: Environment variable management
 - **FileService**: File system operations
 - **MistralOcrProvider**: OCR processing using Mistral AI
-- **PatternMatcher**: Glob pattern expansion
+- **PatternMatcher**: Glob pattern expansion with alphabetical sorting
 - **PdfProcessor**: Processing individual PDF files
 - **ResultAggregator**: Combining multiple OCR results
 - **ResultWriter**: Writing results to JSON files

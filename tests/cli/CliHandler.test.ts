@@ -13,15 +13,15 @@ describe('CliHandler', () => {
       expect(options.help).toBe(true);
     });
     
-    test('should parse output file option with long form', () => {
-      const options = cliHandler.parseArguments(['--output', 'custom.json', 'file.pdf']);
-      expect(options.outputFile).toBe('custom.json');
+    test('should parse output folder option with long form', () => {
+      const options = cliHandler.parseArguments(['--output', 'output/', 'file.pdf']);
+      expect(options.outputFolder).toBe('output/');
       expect(options.inputPatterns).toEqual(['file.pdf']);
     });
     
-    test('should parse output file option with short form', () => {
-      const options = cliHandler.parseArguments(['-o', 'result.json', 'doc.pdf']);
-      expect(options.outputFile).toBe('result.json');
+    test('should parse output folder option with short form', () => {
+      const options = cliHandler.parseArguments(['-o', 'results/', 'doc.pdf']);
+      expect(options.outputFolder).toBe('results/');
       expect(options.inputPatterns).toEqual(['doc.pdf']);
     });
     
@@ -35,7 +35,7 @@ describe('CliHandler', () => {
     });
     
     test('should throw error when output option missing argument', () => {
-      expect(() => cliHandler.parseArguments(['--output'])).toThrow('--output option requires a filename argument');
+      expect(() => cliHandler.parseArguments(['--output'])).toThrow('--output option requires a folder argument');
     });
   });
   

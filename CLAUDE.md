@@ -104,5 +104,5 @@ processOcr(
 - commit every meaningful change, to gradually implement required feature
 - run tests before every commit, so commited code should always pass tests
 - always end files with new line
-- every product improvement should start from feature branch and end in pr
+- start a new feature branch from main for every new task
 - before commiting: always check if readme need to be updated based on changes
