@@ -106,3 +106,4 @@ processOcr(
 - always end files with new line
 - every product improvement should start from feature branch and end in pr
 - before commiting: always check if readme need to be updated based on changes
+- when adding/changing functionality add/change tests
