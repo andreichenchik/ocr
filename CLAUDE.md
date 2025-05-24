@@ -98,3 +98,11 @@ processOcr(
 - `outputDir`: Directory to save output files (default: current working directory)
 - `combinedOutputFile`: Filename for the combined results (default: result.json)
 - `singleFileMode`: If true, only process the first PDF file (default: false)
+
+## Workflow Memories
+
+- commit every meaningful change, to gradually implement required feature
+- run tests before every commit, so commited code should always pass tests
+- always end files with new line
+- every product improvement should start from feature branch and end in pr
+- before commiting: always check if readme need to be updated based on changes
