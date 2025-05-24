@@ -165,11 +165,7 @@ await processOcr(
 
 ## Contributing
 
-1. Create a feature branch from `main`
-2. Make your changes
-3. Run tests to ensure everything passes
-4. Commit your changes with meaningful messages
-5. Create a pull request to `main`
+Please see our [Contributing Guide](CONTRIBUTING.md) for detailed information on how to contribute to this project.
 
 ## License
 
