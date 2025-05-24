@@ -10,22 +10,27 @@ export class PatternMatcher implements IPatternMatcher {
     const processedPaths = new Set<string>();
     
     for (const pattern of patterns) {
+      const patternFiles: string[] = [];
+      
       if (this.isGlobPattern(pattern)) {
         // Expand glob pattern
         const matches = await glob(pattern, { nodir: true });
         
-        // Filter for PDF files and add unique paths
+        // Filter for PDF files
         for (const match of matches) {
           if (match.toLowerCase().endsWith('.pdf') && !processedPaths.has(match)) {
-            expandedFiles.push(match);
+            patternFiles.push(match);
             processedPaths.add(match);
           }
         }
+        
+        // Sort the files from this pattern alphabetically
+        patternFiles.sort();
       } else {
         // Direct file path
         if (await this.fileService.exists(pattern)) {
           if (pattern.toLowerCase().endsWith('.pdf') && !processedPaths.has(pattern)) {
-            expandedFiles.push(pattern);
+            patternFiles.push(pattern);
             processedPaths.add(pattern);
           } else if (!pattern.toLowerCase().endsWith('.pdf')) {
             console.warn(`Warning: ${pattern} is not a PDF file and will be skipped.`);
@@ -34,6 +39,9 @@ export class PatternMatcher implements IPatternMatcher {
           console.warn(`Warning: File ${pattern} not found.`);
         }
       }
+      
+      // Add all files from this pattern to the result
+      expandedFiles.push(...patternFiles);
     }
     
     return expandedFiles;

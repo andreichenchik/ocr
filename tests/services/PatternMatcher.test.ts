@@ -33,14 +33,14 @@ describe('PatternMatcher', () => {
   });
   
   describe('expandPatterns', () => {
-    test('should expand glob patterns to PDF files', async () => {
+    test('should expand glob patterns to PDF files and sort alphabetically', async () => {
       const patterns = ['docs/*.pdf'];
-      mockGlob.mockResolvedValue(['docs/file1.pdf', 'docs/file2.pdf']);
+      mockGlob.mockResolvedValue(['docs/file2.pdf', 'docs/file1.pdf', 'docs/file3.pdf']);
       
       const result = await patternMatcher.expandPatterns(patterns);
       
       expect(mockGlob).toHaveBeenCalledWith('docs/*.pdf', { nodir: true });
-      expect(result).toEqual(['docs/file1.pdf', 'docs/file2.pdf']);
+      expect(result).toEqual(['docs/file1.pdf', 'docs/file2.pdf', 'docs/file3.pdf']);
     });
     
     test('should handle direct file paths', async () => {
@@ -54,19 +54,20 @@ describe('PatternMatcher', () => {
       expect(result).toEqual(['file1.pdf', 'file2.pdf']);
     });
     
-    test('should mix glob patterns and direct paths', async () => {
+    test('should mix glob patterns and direct paths preserving pattern order', async () => {
       const patterns = ['docs/*.pdf', 'single.pdf'];
-      mockGlob.mockResolvedValue(['docs/file1.pdf', 'docs/file2.pdf']);
+      mockGlob.mockResolvedValue(['docs/file2.pdf', 'docs/file1.pdf']);
       mockFileService.exists.mockResolvedValue(true);
       
       const result = await patternMatcher.expandPatterns(patterns);
       
+      // Glob results should be sorted, then single.pdf added after
       expect(result).toEqual(['docs/file1.pdf', 'docs/file2.pdf', 'single.pdf']);
     });
     
-    test('should filter out non-PDF files from glob results', async () => {
+    test('should filter out non-PDF files from glob results and sort', async () => {
       const patterns = ['docs/*'];
-      mockGlob.mockResolvedValue(['docs/file1.pdf', 'docs/file2.txt', 'docs/file3.PDF']);
+      mockGlob.mockResolvedValue(['docs/file3.PDF', 'docs/file2.txt', 'docs/file1.pdf']);
       
       const result = await patternMatcher.expandPatterns(patterns);
       
@@ -98,10 +99,10 @@ describe('PatternMatcher', () => {
       expect(result).toEqual([]);
     });
     
-    test('should deduplicate files', async () => {
+    test('should deduplicate files and sort within each pattern group', async () => {
       const patterns = ['*.pdf', 'docs/*.pdf', 'file1.pdf'];
       mockGlob.mockImplementation(async (pattern) => {
-        if (pattern === '*.pdf') return ['file1.pdf', 'file2.pdf'];
+        if (pattern === '*.pdf') return ['file2.pdf', 'file1.pdf'];
         if (pattern === 'docs/*.pdf') return ['docs/file3.pdf', 'docs/file1.pdf'];
         return [];
       });
@@ -109,23 +110,24 @@ describe('PatternMatcher', () => {
       
       const result = await patternMatcher.expandPatterns(patterns);
       
-      expect(result).toEqual(['file1.pdf', 'file2.pdf', 'docs/file3.pdf', 'docs/file1.pdf']);
+      // Each pattern group sorted, file1.pdf already in first group so not duplicated
+      expect(result).toEqual(['file1.pdf', 'file2.pdf', 'docs/file1.pdf', 'docs/file3.pdf']);
     });
     
-    test('should handle case-insensitive PDF extension', async () => {
+    test('should handle case-insensitive PDF extension and sort', async () => {
       const patterns = ['files/*'];
-      mockGlob.mockResolvedValue(['files/doc1.PDF', 'files/doc2.pDf', 'files/doc3.pdf']);
+      mockGlob.mockResolvedValue(['files/doc3.pdf', 'files/doc1.PDF', 'files/doc2.pDf']);
       
       const result = await patternMatcher.expandPatterns(patterns);
       
       expect(result).toEqual(['files/doc1.PDF', 'files/doc2.pDf', 'files/doc3.pdf']);
     });
     
-    test('should handle glob patterns with special characters', async () => {
+    test('should handle glob patterns with special characters and sort', async () => {
       const patterns = ['docs/[a-z]*.pdf', 'files/doc?.pdf'];
       mockGlob.mockImplementation(async (pattern) => {
-        if (pattern === 'docs/[a-z]*.pdf') return ['docs/abc.pdf', 'docs/def.pdf'];
-        if (pattern === 'files/doc?.pdf') return ['files/doc1.pdf', 'files/doc2.pdf'];
+        if (pattern === 'docs/[a-z]*.pdf') return ['docs/def.pdf', 'docs/abc.pdf'];
+        if (pattern === 'files/doc?.pdf') return ['files/doc2.pdf', 'files/doc1.pdf'];
         return [];
       });
       
@@ -133,6 +135,25 @@ describe('PatternMatcher', () => {
       
       expect(mockGlob).toHaveBeenCalledTimes(2);
       expect(result).toEqual(['docs/abc.pdf', 'docs/def.pdf', 'files/doc1.pdf', 'files/doc2.pdf']);
+    });
+    
+    test('should preserve pattern group order while sorting within groups', async () => {
+      const patterns = ['b/*.pdf', 'a/*.pdf', 'c/*.pdf'];
+      mockGlob.mockImplementation(async (pattern) => {
+        if (pattern === 'b/*.pdf') return ['b/3.pdf', 'b/1.pdf', 'b/2.pdf'];
+        if (pattern === 'a/*.pdf') return ['a/z.pdf', 'a/x.pdf', 'a/y.pdf'];
+        if (pattern === 'c/*.pdf') return ['c/beta.pdf', 'c/alpha.pdf'];
+        return [];
+      });
+      
+      const result = await patternMatcher.expandPatterns(patterns);
+      
+      // First b/* (sorted), then a/* (sorted), then c/* (sorted)
+      expect(result).toEqual([
+        'b/1.pdf', 'b/2.pdf', 'b/3.pdf',
+        'a/x.pdf', 'a/y.pdf', 'a/z.pdf',
+        'c/alpha.pdf', 'c/beta.pdf'
+      ]);
     });
   });
   

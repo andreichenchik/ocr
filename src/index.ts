@@ -44,8 +44,8 @@ async function main() {
     
     // Process files using orchestrator
     await orchestrator.processFiles(inputFiles, {
-      outputDir: process.cwd(),
-      combinedOutputFile: options.outputFile || 'result.json'
+      outputDir: options.outputFolder || process.cwd(),
+      combinedOutputFile: 'result.json'
     });
     
   } catch (error) {

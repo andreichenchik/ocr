@@ -1,5 +1,5 @@
 export interface CliOptions {
-  outputFile?: string;
+  outputFolder?: string;
   help?: boolean;
   inputPatterns: string[];
 }
@@ -14,7 +14,7 @@ Arguments:
   [files]                 PDF file(s) to process. Supports glob patterns like "*.pdf"
   
 Options:
-  -o, --output <file>     Output file name for results (default: "result.json")
+  -o, --output <folder>   Output folder for results (default: current directory)
   -h, --help              Show this help message
 
 Environment Variables:
@@ -22,8 +22,8 @@ Environment Variables:
 
 Examples:
   npm run ocr -- sample.pdf
-  npm run ocr -- --output results.json "docs/*.pdf"
-  npm run ocr -- -o custom.json file1.pdf file2.pdf
+  npm run ocr -- --output results/ "docs/*.pdf"
+  npm run ocr -- -o output/ file1.pdf file2.pdf
   `;
   
   parseArguments(args: string[]): CliOptions {
@@ -43,10 +43,10 @@ Examples:
       
       if (arg === '--output' || arg === '-o') {
         if (i + 1 < args.length && !args[i + 1].startsWith('-')) {
-          options.outputFile = args[i + 1];
+          options.outputFolder = args[i + 1];
           i++; // Skip the next argument
         } else {
-          throw new Error('--output option requires a filename argument');
+          throw new Error('--output option requires a folder argument');
         }
       } else if (arg.startsWith('-')) {
         throw new Error(`Unknown option: ${arg}`);
