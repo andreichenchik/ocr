@@ -55,4 +55,17 @@ describe('CliHandler', () => {
       expect(() => cliHandler.validateOptions(options)).not.toThrow();
     });
   });
+  
+  describe('showHelp', () => {
+    test('should display help text', () => {
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      
+      cliHandler.showHelp();
+      
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('OCR Tool Usage:'));
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Process PDF files using Mistral AI OCR API'));
+      
+      consoleSpy.mockRestore();
+    });
+  });
 });
